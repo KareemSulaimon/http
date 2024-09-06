@@ -4,8 +4,9 @@ use std::{
     thread,
 };
 
-// Use the correct crate/module for HTTP request parsing
-use simple_http::http::request;
+// Use the simple_http module
+use simple_http::http::request::HttpRequest;
+use simple_http::http::response::HttpResponse;
 
 fn create_socket() -> SocketAddr {
     SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5500)
@@ -21,7 +22,7 @@ fn handle_client(mut stream: TcpStream) -> io::Result<()> {
     let buf_str = String::from_utf8_lossy(&buffer[..bytes_read]);
 
     // Parse the HTTP request
-    let request = match request::HttpRequest::new(&buf_str) {
+    let request = match HttpRequest::new(&buf_str) {
         Ok(req) => req,
         Err(e) => {
             eprintln!("Failed to parse request: {}", e);
@@ -30,7 +31,7 @@ fn handle_client(mut stream: TcpStream) -> io::Result<()> {
     };
 
     // Generate an HTTP response
-    let response = match request.response() {
+    let response = match HttpResponse::new(request) {
         Ok(resp) => resp,
         Err(e) => {
             eprintln!("Failed to generate response: {}", e);
@@ -38,14 +39,11 @@ fn handle_client(mut stream: TcpStream) -> io::Result<()> {
         }
     };
 
-    // Prepare the full HTTP response with headers and body
-    let response_str = response.to_string();
-
     // Print the response to the terminal
-    println!("Sending response:\n{}", response_str);
+    println!("Sending response:\n{}", response);
 
     // Write the response to the stream
-    stream.write_all(response_str.as_bytes())?;
+    stream.write_all(response.to_string().as_bytes())?;
 
     Ok(())
 }

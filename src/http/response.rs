@@ -1,6 +1,6 @@
 use std::fmt::{self, Display, Formatter};
 use std::io;
-use crate::http::request::{HttpRequest, Version}; // Import HttpRequest and Version
+use crate::http::request::{HttpRequest, Version};
 
 pub struct HttpResponse {
     pub version: Version,
@@ -15,35 +15,18 @@ pub struct HttpResponse {
 
 impl HttpResponse {
     pub fn new(request: HttpRequest) -> io::Result<HttpResponse> {
-        let version = Version::V2_0; // Or whatever logic you need to determine the version
-        let mut status = ResponseStatus::NotFound;
-        let mut content_length = 0;
-        let mut accept_ranges = AcceptRanges::None;
-        let current_path = request.resource.path.clone();
-        let mut response_body = String::new();
+        let version = Version::V2_0;
+        let status = ResponseStatus::OK;
+        let response_body = r#"
+[package]
+name = "simple-http"
+version = "0.1.0"
+edition = "2021"
 
-        let server_path = std::env::current_dir()?;
-        let resource = request.resource.path.clone();
-        let new_path = server_path.join(resource);
+[dependencies]
+"#;
 
-        if new_path.exists() {
-            if new_path.is_file() {
-                let content = std::fs::read_to_string(new_path)?;
-                response_body.push_str(&content);
-                content_length = content.len();
-                status = ResponseStatus::OK;
-                accept_ranges = AcceptRanges::Bytes;
-            }
-        } else {
-            response_body = format!(
-                "<html>\
-                <body>\
-                <h1>NOT FOUND</h1>\
-                </body>\
-                </html>"
-            );
-            content_length = response_body.len();
-        }
+        let content_length = response_body.len(); // Length of the response body
 
         let response_header = format!(
             "{} {}\r\n\
@@ -54,7 +37,7 @@ impl HttpResponse {
             version,
             status,
             content_length,
-            accept_ranges,
+            AcceptRanges::None,
             "simple-http",
             "0.1.0"
         );
@@ -63,9 +46,9 @@ impl HttpResponse {
             version,
             status,
             content_length,
-            accept_ranges,
+            accept_ranges: AcceptRanges::None,
             response_body: format!("{}{}", response_header, response_body),
-            current_path,
+            current_path: request.resource.path.clone(),
             package_name: "simple-http".to_string(),
             package_version: "0.1.0".to_string(),
         })
